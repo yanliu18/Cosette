@@ -2,12 +2,12 @@ Development Instructions
 ========================
 
 ## Set up development environment
+Following this link to install The Haskell Tool Stack :https://docs.haskellstack.org/en/stable/README/
 
-1. Install haskell (`GHC`)
-2. `cabal update`
-3. `cabal sandbox init`
-4. `cabal install Parsec`
-5. `cabal install HUnit`
+1. cd dsl
+2. stack setup
+3. stack build
+4. stack exec my-project-exe
 
 ## Test parser
 

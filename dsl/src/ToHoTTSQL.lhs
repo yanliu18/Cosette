@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-= Convert Cosette AST to rosette program
+= Convert Cosette AST to HoTTSQL program
 
 > module ToHoTTSQL where
 
@@ -643,8 +643,10 @@ generate predicate declarations
 >                       "" (prefixScm <$> s)
 
 > headers :: [String]
-> headers = ["Require Import HoTT.",
->            "Require Import UnivalenceAxiom.",
+> headers = ["From HoTT Require Import HoTT.",
+>			 "From HoTT Require Import Types.Universe.",
+>			 "Axiom univalence_axiom : Univalence.",
+>			 "Global Existing Instance univalence_axiom. \n",
 >            "Require Import HoTTEx.",
 >            "Require Import Denotation.",
 >            "Require Import UnivalentSemantics.",
@@ -655,9 +657,9 @@ generate predicate declarations
 >            "  Import T S R A.",
 >            "  Module SQL_TSRA := SQL T S R A.",
 >            "  Import SQL_TSRA.",
->            "  Module AutoTac := AutoTactics T S R A.",
+>            "  Module AutoTac := AutoTactics.AutoTactics T S R A.",
 >            "  Import AutoTac.",
->            "  Module CQTac := CQTactics T S R A.",
+>            "  Module CQTac := CQTactics.CQTactics T S R A.",
 >            "  Import CQTac. \n",
 >            "  Notation combine' := combineGroupByProj.\n",
 >            "  Parameter count : forall {T}, aggregator T int.",

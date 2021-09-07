@@ -22,7 +22,7 @@ Syntax and Parser for Cosette.
 
 == SQL keywords
 
-> sqlKeywords :: [String]                      
+> sqlKeywords :: [String]
 > sqlKeywords = [--join keywords
 >                "natural"
 >                ,"inner"
@@ -70,7 +70,7 @@ Syntax and Parser for Cosette.
 >                | And Predicate Predicate
 >                | Or Predicate Predicate
 >                | Not Predicate
->                | Exists QueryExpr 
+>                | Exists QueryExpr
 >                | Veq ValueExpr ValueExpr   -- equal
 >                | Vgt ValueExpr ValueExpr   -- greater than
 >                | Vlt ValueExpr ValueExpr   -- less than
@@ -98,7 +98,7 @@ consider add the following to the definition of TableRef
 if convert list of relation to nested join is move to Cosette AST level
 
 > data TableRef = TR TableExpr String           -- table expr, alias
->               | TRJoin TableRef JoinType TableRef (Maybe Predicate) 
+>               | TRJoin TableRef JoinType TableRef (Maybe Predicate)
 >                 deriving (Eq, Show)
 
 > data JoinType = InnerJoin | LeftJoin | RightJoin | FullOuterJoin
@@ -218,7 +218,7 @@ valueExpr
 > selectItem :: Parser SelectItem
 > selectItem = star <|> try dstar <|> proj
 
-== parsing predicate 
+== parsing predicate
 
 negation
 
@@ -269,18 +269,18 @@ exists clause
 > pterm :: Parser Predicate
 > pterm = lexeme pterm'
 
-=== conjuctive predicate, 
+=== conjuctive predicate,
 
 > conp :: Parser Predicate
 > conp = chainl1 pterm op
 >   where
 >     op = do
->       void $ lexeme $ keyword "and" 
+>       void $ lexeme $ keyword "and"
 >       return And
 
 === predicate
 
-> predicate :: Parser Predicate 
+> predicate :: Parser Predicate
 > predicate = chainl1 conp op
 >   where
 >     op = do
@@ -381,8 +381,8 @@ Query expression
 > queryExpr = try unionQueryExpr
 >         <|> spjQueryExpr
 >         <|> (parens queryExpr)
-             
-=== Parse Cosette statement 
+
+=== Parse Cosette statement
 
 Parse schema declaration
 
@@ -489,7 +489,7 @@ do nothing.
 >   update a = a
 
 > newtype Counter = MakeCounter Integer
- 
+
 > instance CosCtx Counter where
 >   update (MakeCounter i) = MakeCounter $ i + 1
 
@@ -502,14 +502,14 @@ extra pass 1: infer alias if there no alias
 >   where f (Proj v s) = if s == ""
 >                        then Proj <$> Right v <*> toName v
 >                        else Right (Proj v s)
->         f other = Right other 
+>         f other = Right other
 
 extra pass 2: remove inner join
 
 > removeIJ :: Void -> QueryExpr -> Either String QueryExpr
 > removeIJ _ (Select sl fr w g d) =
 >   let (trs, newP) = rmInFr fr in
->     Right $ Select sl trs (conj newP <$> wh) g d 
+>     Right $ Select sl trs (conj newP <$> wh) g d
 >   where wh = if w == Nothing then Just TRUE else w
 >         rmInFr Nothing = (Nothing, TRUE)
 >         rmInFr (Just fl) =
@@ -530,7 +530,7 @@ extra pass 3: convert having
 Note this pass is only required when generating Coq code
 
 > removeHaving :: Counter -> QueryExpr -> Either String QueryExpr
-> removeHaving (MakeCounter i) (Select sl fr w (Just (GroupBy gl (Just p))) d) = 
+> removeHaving (MakeCounter i) (Select sl fr w (Just (GroupBy gl (Just p))) d) =
 >   do  asl <- checkListErr $ (makeSl <$> aggs)
 >       esl <- checkListErr $ (mc2SI <$> missCols)
 >       subq <- Right $ Select (sl ++ esl  ++ asl) fr w (Just $ GroupBy gl Nothing) False
@@ -575,7 +575,7 @@ Note this pass is only required when generating Coq code
 >         mc2SI c = if elem c gl
 >                   then Proj c <$> toName c
 >                   else Left "cannot use a non group by column in having"
-> -- do nothing for queries without having         
+> -- do nothing for queries without having
 > removeHaving (MakeCounter i) (Select sl fr w g d) = Right $ Select sl fr w g d
 
 collect aggregation from Predicate
@@ -650,12 +650,15 @@ apply transformation pass recursively on Cosette ASTs
 > applyCosPass p c (UnionAll q1 q2) =
 >   UnionAll <$> applyCosPass p c q1 <*> applyCosPass p c q2
 > applyCosPass p c (Select sl f w g d) =
->   do (Select sl' f' w' g' d') <- p c (Select sl f w g d)
->      nsl <- (checkListErr $ map convSI sl')
->      nf <- newFr f'
->      nw <- newWh w'
->      return $ Select nsl nf nw g' d'        
->   where c' = update c
+>      do {(Select sl' f' w' g' d') <- (case slstmt of
+>                                 Left s -> error s
+>                                 Right e -> Right e);
+>      nsl <- (checkListErr $ map convSI sl');
+>      nf <- newFr f';
+>      nw <- newWh w';
+>      return $ Select nsl nf nw g' d'}
+>   where slstmt = p c (Select sl f w g d)
+>         c' = update c
 >         convVE (BinOp v1 op v2) = BinOp <$> convVE v1 <*> Right op <*> convVE v2
 >         convVE (VQE q) = VQE <$> applyCosPass p c' q
 >         convVE other = Right other
@@ -690,11 +693,11 @@ apply transformation pass recursively on Cosette ASTs
 This function should be used to parse cosette program
 
 > parseCosette :: String -> Either String [CosetteStmt]
-> parseCosette source = 
+> parseCosette source =
 >   let cs = parse (whitespace *> cosetteProgram <* eof) "" (toLower <$> source) in
 >   case cs of
 >     Left emsg -> Left (show emsg)
->     Right asts -> passCos asts 
+>     Right asts -> passCos asts
 
 > getStrLit :: QueryExpr -> [String]
 > getStrLit (UnionAll q1 q2) = getStrLit q1 ++ getStrLit q2
@@ -801,7 +804,7 @@ In this pass, we collect all string literals, and make constant declarations for
 > eq = lexeme $ char '='
 
 > gt :: Parser Char
-> 
+>
 > gt = lexeme $ char '>'
 
 > lt :: Parser Char
@@ -854,10 +857,10 @@ In this pass, we collect all string literals, and make constant declarations for
 == the parser api
 
 > parseQueryExpr' :: String -> Either ParseError QueryExpr
-> parseQueryExpr' = parse (whitespace *> queryExpr <* eof) "" 
+> parseQueryExpr' = parse (whitespace *> queryExpr <* eof) ""
 
 > parseQueryExpr :: String -> Either String QueryExpr
-> parseQueryExpr source = 
+> parseQueryExpr source =
 >   let r = parseQueryExpr' (toLower <$> source) in
 >   case r of
 >     Left e -> Left (show e)
@@ -870,18 +873,9 @@ do q1 <- passQuery ast
 > parseValueExpr :: String -> Either ParseError ValueExpr
 > parseValueExpr = parse (whitespace *> valueExpr [] <* eof) ""
 
-== test cases
-
-> makeSelect :: QueryExpr
-> makeSelect = Select {qSelectList = []
->                     ,qFrom = Nothing
->                     ,qWhere = Nothing
->                     ,qGroup = Nothing
->                     ,qDistinct = False}
-
-> makeTest :: (String, QueryExpr) -> Test
-> makeTest (src, expected) = TestLabel src $ TestCase $ do
->     let gote = parseQueryExpr src
->     case gote of
->       Left e -> assertFailure $ e
->       Right got -> assertEqual src expected got
+makeTest :: (String, QueryExpr) -> Test
+makeTest (src, expected) = TestLabel src $ TestCase $ do
+    let gote = parseQueryExpr src
+    case gote of
+      Left e -> assertFailure $ e
+      Right got -> assertEqual src expected got
